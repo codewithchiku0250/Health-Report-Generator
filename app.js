@@ -23,6 +23,16 @@ if (savedUser) {
     setTimeout(() => loginSuccess(), 100);
 }
 
+// Helper to get all users
+function getAllUsers() {
+    return JSON.parse(localStorage.getItem('users')) || {};
+}
+
+// Helper to save users
+function saveUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+}
+
 // Generate Dummy Data for testing
 function seedDummyData() {
     if (!localStorage.getItem('healthReports')) {
@@ -56,6 +66,9 @@ function seedDummyData() {
                 summary: ["All tested parameters are within normal ranges."]
             }
         ];
+        if (AppState.currentUser) {
+            dummyReports.forEach(r => r.doctorEmail = AppState.currentUser.email);
+        }
         localStorage.setItem('healthReports', JSON.stringify(dummyReports));
     }
 }
@@ -63,13 +76,24 @@ function seedDummyData() {
 // Load reports
 function loadReports() {
     const data = localStorage.getItem('healthReports');
-    AppState.reports = data ? JSON.parse(data) : [];
+    const allReports = data ? JSON.parse(data) : [];
+    if (AppState.currentUser) {
+        AppState.reports = allReports.filter(r => r.doctorEmail === AppState.currentUser.email || !r.doctorEmail);
+    } else {
+        AppState.reports = allReports;
+    }
 }
 
 // Save report
 function saveReport(report) {
+    if (AppState.currentUser) {
+        report.doctorEmail = AppState.currentUser.email;
+    }
+    const data = localStorage.getItem('healthReports');
+    const allReports = data ? JSON.parse(data) : [];
+    allReports.unshift(report);
+    localStorage.setItem('healthReports', JSON.stringify(allReports));
     AppState.reports.unshift(report); // Add to top
-    localStorage.setItem('healthReports', JSON.stringify(AppState.reports));
 }
 
 // ==========================================
@@ -160,9 +184,9 @@ DOM.formLogin.addEventListener('submit', (e) => {
     const email = document.getElementById('login-email').value;
 
     // Simulate Login
-    const existingUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (existingUser && existingUser.email === email) {
-        AppState.currentUser = existingUser;
+    const users = getAllUsers();
+    if (users[email]) {
+        AppState.currentUser = users[email];
     } else {
         AppState.currentUser = {
             name: email.split('@')[0],
@@ -171,8 +195,10 @@ DOM.formLogin.addEventListener('submit', (e) => {
             clinicAddress: '123 Medical Boulevard, Wellness City',
             clinicPhone: '(555) 123-4567'
         };
-        localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+        users[email] = AppState.currentUser;
+        saveUsers(users);
     }
+    localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
     loginSuccess();
 });
 
@@ -185,19 +211,34 @@ DOM.formSignup.addEventListener('submit', (e) => {
     const clinicPhone = document.getElementById('signup-phone').value;
 
     // Simulate Signup
+    const users = getAllUsers();
     AppState.currentUser = { name, email, clinicName, clinicAddress, clinicPhone };
+    users[email] = AppState.currentUser;
+    saveUsers(users);
+
     localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
     loginSuccess();
 });
 
 document.getElementById('btn-guest-login').addEventListener('click', () => {
-    AppState.currentUser = {
-        name: 'Guest Doctor',
-        email: 'guest@clinic.com',
-        clinicName: 'HealthGen Diagnostics',
-        clinicAddress: '123 Medical Boulevard, Wellness City',
-        clinicPhone: '(555) 123-4567'
-    };
+    const email = 'guest@clinic.com';
+    const users = getAllUsers();
+    
+    if (users[email]) {
+        AppState.currentUser = users[email];
+    } else {
+        AppState.currentUser = {
+            name: 'Guest Doctor',
+            email: email,
+            clinicName: 'HealthGen Diagnostics',
+            clinicAddress: '123 Medical Boulevard, Wellness City',
+            clinicPhone: '(555) 123-4567'
+        };
+        users[email] = AppState.currentUser;
+        saveUsers(users);
+    }
+    
+    localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
     loginSuccess();
 });
 
@@ -232,11 +273,20 @@ if (DOM.formProfile) {
     DOM.formProfile.addEventListener('submit', (e) => {
         e.preventDefault();
         if (AppState.currentUser) {
+            const oldEmail = AppState.currentUser.email;
+
             AppState.currentUser.name = document.getElementById('profile-name').value;
             AppState.currentUser.clinicName = document.getElementById('profile-clinic').value;
             AppState.currentUser.clinicAddress = document.getElementById('profile-address').value;
             AppState.currentUser.clinicPhone = document.getElementById('profile-phone').value;
             AppState.currentUser.email = document.getElementById('profile-email').value;
+
+            const users = getAllUsers();
+            if (AppState.currentUser.email !== oldEmail) {
+                delete users[oldEmail];
+            }
+            users[AppState.currentUser.email] = AppState.currentUser;
+            saveUsers(users);
 
             localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
             DOM.navUsername.textContent = `Dr. ${AppState.currentUser.name}`;
@@ -324,7 +374,12 @@ function renderDashboard() {
                 const id = e.currentTarget.getAttribute('data-id');
                 if (confirm('Are you sure you want to delete this report?')) {
                     AppState.reports = AppState.reports.filter(r => r.id !== id);
-                    localStorage.setItem('healthReports', JSON.stringify(AppState.reports));
+                    
+                    const data = localStorage.getItem('healthReports');
+                    let allReports = data ? JSON.parse(data) : [];
+                    allReports = allReports.filter(r => r.id !== id);
+                    localStorage.setItem('healthReports', JSON.stringify(allReports));
+                    
                     renderDashboard();
                     showToast('Report deleted', true);
                 }
