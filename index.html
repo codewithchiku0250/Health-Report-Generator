@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Report Generator</title>
+    <meta name="description" content="Generate and manage professional health and medical test reports.">
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message">Message</span>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="modal-profile" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-user-doctor"></i> Doctor Profile</h2>
+                <button id="btn-close-profile" class="icon-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="form-profile">
+                <div class="form-group">
+                    <label for="profile-name">Full Name</label>
+                    <input type="text" id="profile-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-clinic">Clinic Name</label>
+                    <input type="text" id="profile-clinic" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-address">Clinic Address (Where reports are generated)</label>
+                    <input type="text" id="profile-address" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-phone">Phone Number</label>
+                    <input type="tel" id="profile-phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-email">Email</label>
+                    <input type="email" id="profile-email" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav id="navbar" class="hidden">
+        <div class="nav-brand">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <span>HealthGen</span>
+        </div>
+        <div class="nav-controls">
+            <span id="nav-username"></span>
+            <button id="btn-edit-profile" class="icon-btn" title="Edit Profile">
+                <i class="fa-solid fa-user-doctor"></i>
+            </button>
+            <button id="btn-theme-toggle" class="icon-btn" title="Toggle Dark Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <button id="btn-logout" class="btn btn-outline btn-sm">Logout</button>
+        </div>
+    </nav>
+
+    <main id="app-container">
+
+        <!-- ================= AUTHENTICATION SCREEN ================= -->
+        <section id="screen-auth" class="screen active">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <i class="fa-solid fa-heart-pulse logo-icon"></i>
+                    <h2>HealthGen</h2>
+                    <p>Professional Health Reports</p>
+                </div>
+
+                <!-- Login Form -->
+                <form id="form-login" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                    <button type="button" id="btn-guest-login" class="btn btn-secondary btn-block">Continue as
+                        Guest</button>
+                    <p class="auth-switch">Don't have an account? <a href="#" id="link-to-signup">Sign up</a></p>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="form-signup" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-clinic">Clinic Name</label>
+                        <input type="text" id="signup-clinic" required placeholder="HealthGen Diagnostics">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-address">Clinic Address</label>
+                        <input type="text" id="signup-address" required placeholder="123 Medical Blvd, City">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-phone">Phone Number</label>
+                        <input type="tel" id="signup-phone" required placeholder="(555) 123-4567">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                    <p class="auth-switch">Already have an account? <a href="#" id="link-to-login">Sign in</a></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= DASHBOARD SCREEN ================= -->
+        <section id="screen-dashboard" class="screen hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h1 id="welcome-message">Welcome</h1>
+                    <p>Manage your health records and generate new reports.</p>
+                </div>
+                <button id="btn-new-report" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> New Report
+                </button>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-file-medical"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-value" id="stat-total-reports">0</span>
+                            <span class="stat-label">Total Reports</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon check"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-value">Up to date</span>
+                            <span class="stat-label">System Status</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reports-section">
+                    <h2>Recent Reports</h2>
+                    <div id="reports-list" class="reports-grid">
+                        <!-- Report Cards Injected Here -->
+                    </div>
+                    <div id="empty-state" class="empty-state hidden">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <p>No reports found. Create one to get started.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= DATA INPUT SCREEN ================= -->
+        <section id="screen-input" class="screen hidden">
+            <div class="page-header">
+                <button id="btn-back-to-dash" class="icon-btn text-muted"><i
+                        class="fa-solid fa-arrow-left"></i></button>
+                <h2>Create New Report</h2>
+            </div>
+
+            <div class="form-container">
+                <form id="form-medical-data">
+                    <div class="form-section">
+                        <h3><i class="fa-solid fa-user"></i> Patient Information</h3>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="patient-name">Patient Name</label>
+                                <input type="text" id="patient-name" required placeholder="E.g. Jane Smith">
+                            </div>
+                            <div class="form-group">
+                                <label for="patient-age">Age</label>
+                                <input type="number" id="patient-age" required placeholder="E.g. 34">
+                            </div>
+                            <div class="form-group">
+                                <label for="patient-gender">Gender</label>
+                                <select id="patient-gender" required>
+                                    <option value="" disabled selected>Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="report-date">Date of Test</label>
+                                <input type="date" id="report-date" required>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="patient-address">Patient Address</label>
+                                <input type="text" id="patient-address" required placeholder="E.g. 123 Main St, City">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-tabs">
+                        <button type="button" class="tab-btn active" data-target="blood-test-fields">Blood Test</button>
+                        <button type="button" class="tab-btn" data-target="urine-test-fields">Urine Test</button>
+                    </div>
+
+                    <!-- Blood Test Fields -->
+                    <div id="blood-test-fields" class="tab-content active">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="val-hemo">Hemoglobin (g/dL) <span class="help-icon"
+                                        title="Normal: 12-17">?</span></label>
+                                <input type="number" step="0.1" id="val-hemo" placeholder="e.g. 14.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-rbc">RBC Count (millions/mcL) <span class="help-icon"
+                                        title="Normal: 4.0-5.9">?</span></label>
+                                <input type="number" step="0.01" id="val-rbc" placeholder="e.g. 4.8">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-wbc">WBC Count (cells/mcL) <span class="help-icon"
+                                        title="Normal: 4500-11000">?</span></label>
+                                <input type="number" id="val-wbc" placeholder="e.g. 6500">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-platelets">Platelets (cells/mcL) <span class="help-icon"
+                                        title="Normal: 150000-450000">?</span></label>
+                                <input type="number" id="val-platelets" placeholder="e.g. 250000">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-sugar">Blood Sugar (Fasting) (mg/dL) <span class="help-icon"
+                                        title="Normal: 70-100">?</span></label>
+                                <input type="number" id="val-sugar" placeholder="e.g. 95">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Urine Test Fields -->
+                    <div id="urine-test-fields" class="tab-content hidden">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="val-color">Color</label>
+                                <select id="val-color">
+                                    <option value="" disabled selected>Select Color</option>
+                                    <option value="Pale Yellow">Pale Yellow</option>
+                                    <option value="Yellow">Yellow</option>
+                                    <option value="Dark Yellow">Dark Yellow</option>
+                                    <option value="Amber">Amber</option>
+                                    <option value="Red/Brown">Red/Brown</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="val-ph">pH Level <span class="help-icon"
+                                        title="Normal: 4.5-8.0">?</span></label>
+                                <input type="number" step="0.1" id="val-ph" placeholder="e.g. 6.0">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-protein">Protein</label>
+                                <select id="val-protein">
+                                    <option value="Negative">Negative</option>
+                                    <option value="Trace">Trace</option>
+                                    <option value="Positive">Positive</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="val-glucosuria">Glucose</label>
+                                <select id="val-glucosuria">
+                                    <option value="Negative">Negative</option>
+                                    <option value="Trace">Trace</option>
+                                    <option value="Positive">Positive</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="val-ketones">Ketones</label>
+                                <select id="val-ketones">
+                                    <option value="Negative">Negative</option>
+                                    <option value="Trace">Trace</option>
+                                    <option value="Positive">Positive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="btn-cancel-report" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Generate Report <i
+                                class="fa-solid fa-wand-magic-sparkles"></i></button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= REPORT PREVIEW SCREEN ================= -->
+        <section id="screen-report" class="screen hidden">
+            <div class="report-controls">
+                <button id="btn-close-report" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>
+                    Back</button>
+                <div class="action-buttons">
+                    <button class="btn btn-outline" id="btn-share-report" title="Copy to clipboard"><i
+                            class="fa-solid fa-share-nodes"></i></button>
+                    <button id="btn-download-pdf" class="btn btn-primary"><i class="fa-solid fa-download"></i> Download
+                        PDF</button>
+                </div>
+            </div>
+
+            <!-- The element that will be converted to PDF -->
+            <div id="pdf-container" class="a4-document">
+                <div class="doc-header">
+                    <div class="clinic-info">
+                        <div class="clinic-logo">
+                            <i class="fa-solid fa-notes-medical"></i>
+                        </div>
+                        <div>
+                            <h2 id="r-clinic-name">HealthGen Diagnostics</h2>
+                            <p id="r-clinic-address">123 Medical Boulevard, Wellness City</p>
+                            <p>Phone: <span id="r-clinic-phone">(555) 123-4567</span> | Email: <span
+                                    id="r-clinic-email">lab@healthgen.com</span></p>
+                        </div>
+                    </div>
+                    <div class="doc-title">
+                        <h1>LABORATORY TEST REPORT</h1>
+                    </div>
+                </div>
+
+                <div class="patient-details-box">
+                    <div class="pt-col">
+                        <p><strong>Patient Name:</strong> <span id="r-patient-name"></span></p>
+                        <p><strong>Age/Gender:</strong> <span id="r-patient-age"></span> / <span
+                                id="r-patient-gender"></span></p>
+                        <p><strong>Address:</strong> <span id="r-patient-address"></span></p>
+                    </div>
+                    <div class="pt-col">
+                        <p><strong>Report Date:</strong> <span id="r-report-date"></span></p>
+                        <p><strong>Report ID:</strong> <span id="r-report-id"></span></p>
+                    </div>
+                </div>
+
+                <!-- Blood Test Output -->
+                <div id="r-blood-section" class="results-section">
+                    <h3>Hematology & Bio-Chemistry</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Result</th>
+                                <th>Units</th>
+                                <th>Biological Reference Interval</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r-blood-table-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Urine Test Output -->
+                <div id="r-urine-section" class="results-section" style="margin-top: 2rem;">
+                    <h3>Urinalysis</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Result</th>
+                                <th>Normal Range</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r-urine-table-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ai-summary-box">
+                    <h3><i class="fa-solid fa-stethoscope"></i> Clinical Interpretation</h3>
+                    <div id="r-ai-summary">
+                        <!-- Logic-based text goes here -->
+                    </div>
+                </div>
+
+                <div class="doc-footer">
+                    <div class="signature">
+                        <p>_______________________</p>
+                        <p><strong id="r-doctor-name">Dr. Jonathan Doe</strong></p>
+                        <p>Chief Pathologist</p>
+                    </div>
+                    <div class="footer-text">
+                        <p>This is a computer-generated document. No signature is required.</p>
+                        <p>End of Report</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>
