@@ -403,12 +403,22 @@ document.getElementById('btn-back-to-dash').addEventListener('click', () => {
 // ==========================================
 DOM.tabBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-        DOM.tabBtns.forEach(b => b.classList.remove('active'));
-        DOM.tabContents.forEach(c => c.classList.add('hidden'));
+        const targetBtn = e.currentTarget;
+        const targetId = targetBtn.getAttribute('data-target');
+        const targetContent = document.getElementById(targetId);
 
-        e.target.classList.add('active');
-        const targetId = e.target.getAttribute('data-target');
-        document.getElementById(targetId).classList.remove('hidden');
+        if (targetBtn.classList.contains('active')) {
+            // Prevent deselecting if it's the only one active
+            if (document.querySelectorAll('.tab-btn.active').length > 1) {
+                targetBtn.classList.remove('active');
+                targetContent.classList.add('hidden');
+            } else {
+                showToast('At least one test must be selected', true);
+            }
+        } else {
+            targetBtn.classList.add('active');
+            targetContent.classList.remove('hidden');
+        }
     });
 });
 
@@ -582,13 +592,23 @@ function evaluateLFT(results) {
 DOM.formMedical.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    // Determine Active Tab
-    const activeTabTarget = document.querySelector('.tab-btn.active').getAttribute('data-target');
-    let reportType = '';
-    if (activeTabTarget === 'blood-test-fields') reportType = 'Blood Test';
-    else if (activeTabTarget === 'urine-test-fields') reportType = 'Urine Test';
-    else if (activeTabTarget === 'lipid-profile-fields') reportType = 'Lipid Profile';
-    else if (activeTabTarget === 'lft-fields') reportType = 'Liver Function Test';
+    // Determine Active Tabs
+    let selectedTypes = [];
+    let selectedTargets = [];
+    const activeTabs = document.querySelectorAll('.tab-btn.active');
+    activeTabs.forEach(tab => {
+        const target = tab.getAttribute('data-target');
+        selectedTargets.push(target);
+        if (target === 'blood-test-fields') selectedTypes.push('Blood Test');
+        else if (target === 'urine-test-fields') selectedTypes.push('Urine Test');
+        else if (target === 'lipid-profile-fields') selectedTypes.push('Lipid Profile');
+        else if (target === 'lft-fields') selectedTypes.push('Liver Function Test');
+    });
+
+    if (selectedTypes.length === 0) {
+        showToast('Please select at least one test.', true);
+        return;
+    }
 
     // Gather patient info
     const patientName = document.getElementById('patient-name').value;
@@ -605,49 +625,47 @@ DOM.formMedical.addEventListener('submit', (e) => {
         patientAge,
         patientGender,
         patientAddress,
-        type: reportType,
+        type: selectedTypes.join(' + '),
         results: {},
         summary: []
     };
 
-    if (reportType === 'Blood Test') {
-        report.results = {
-            hemo: parseFloat(document.getElementById('val-hemo').value),
-            rbc: parseFloat(document.getElementById('val-rbc').value),
-            wbc: parseFloat(document.getElementById('val-wbc').value),
-            platelets: parseFloat(document.getElementById('val-platelets').value),
-            sugar: parseFloat(document.getElementById('val-sugar').value)
-        };
+    if (selectedTargets.includes('blood-test-fields')) {
+        report.results.hemo = parseFloat(document.getElementById('val-hemo').value);
+        report.results.rbc = parseFloat(document.getElementById('val-rbc').value);
+        report.results.wbc = parseFloat(document.getElementById('val-wbc').value);
+        report.results.platelets = parseFloat(document.getElementById('val-platelets').value);
+        report.results.sugar = parseFloat(document.getElementById('val-sugar').value);
         const evaluation = evaluateBloodTest(report.results);
-        report.summary = evaluation.summary;
-    } else if (reportType === 'Urine Test') {
-        report.results = {
-            color: document.getElementById('val-color').value,
-            ph: document.getElementById('val-ph').value,
-            protein: document.getElementById('val-protein').value,
-            glucosuria: document.getElementById('val-glucosuria').value,
-            ketones: document.getElementById('val-ketones').value
-        };
+        report.summary = report.summary.concat(evaluation.summary);
+    } 
+    
+    if (selectedTargets.includes('urine-test-fields')) {
+        report.results.color = document.getElementById('val-color').value;
+        report.results.ph = document.getElementById('val-ph').value;
+        report.results.protein = document.getElementById('val-protein').value;
+        report.results.glucosuria = document.getElementById('val-glucosuria').value;
+        report.results.ketones = document.getElementById('val-ketones').value;
         const evaluation = evaluateUrineTest(report.results);
-        report.summary = evaluation.summary;
-    } else if (reportType === 'Lipid Profile') {
-        report.results = {
-            cholesterol: parseFloat(document.getElementById('val-cholesterol').value),
-            triglycerides: parseFloat(document.getElementById('val-triglycerides').value),
-            hdl: parseFloat(document.getElementById('val-hdl').value),
-            ldl: parseFloat(document.getElementById('val-ldl').value)
-        };
+        report.summary = report.summary.concat(evaluation.summary);
+    } 
+    
+    if (selectedTargets.includes('lipid-profile-fields')) {
+        report.results.cholesterol = parseFloat(document.getElementById('val-cholesterol').value);
+        report.results.triglycerides = parseFloat(document.getElementById('val-triglycerides').value);
+        report.results.hdl = parseFloat(document.getElementById('val-hdl').value);
+        report.results.ldl = parseFloat(document.getElementById('val-ldl').value);
         const evaluation = evaluateLipidProfile(report.results);
-        report.summary = evaluation.summary;
-    } else if (reportType === 'Liver Function Test') {
-        report.results = {
-            bilirubin: parseFloat(document.getElementById('val-bilirubin').value),
-            sgpt: parseFloat(document.getElementById('val-sgpt').value),
-            sgot: parseFloat(document.getElementById('val-sgot').value),
-            alp: parseFloat(document.getElementById('val-alp').value)
-        };
+        report.summary = report.summary.concat(evaluation.summary);
+    } 
+    
+    if (selectedTargets.includes('lft-fields')) {
+        report.results.bilirubin = parseFloat(document.getElementById('val-bilirubin').value);
+        report.results.sgpt = parseFloat(document.getElementById('val-sgpt').value);
+        report.results.sgot = parseFloat(document.getElementById('val-sgot').value);
+        report.results.alp = parseFloat(document.getElementById('val-alp').value);
         const evaluation = evaluateLFT(report.results);
-        report.summary = evaluation.summary;
+        report.summary = report.summary.concat(evaluation.summary);
     }
 
     saveReport(report);
@@ -685,25 +703,24 @@ function renderReportPreview(report) {
     const lipidSection = document.getElementById('r-lipid-section');
     const lftSection = document.getElementById('r-lft-section');
 
-    bloodSection.style.display = 'none';
-    urineSection.style.display = 'none';
-    if(lipidSection) lipidSection.style.display = 'none';
-    if(lftSection) lftSection.style.display = 'none';
+    bloodSection.style.display = report.type.includes('Blood Test') ? 'block' : 'none';
+    urineSection.style.display = report.type.includes('Urine Test') ? 'block' : 'none';
+    if(lipidSection) lipidSection.style.display = report.type.includes('Lipid Profile') ? 'block' : 'none';
+    if(lftSection) lftSection.style.display = report.type.includes('Liver Function Test') ? 'block' : 'none';
 
-    if (report.type === 'Blood Test') {
-        bloodSection.style.display = 'block';
+    if (report.type.includes('Blood Test')) {
         const evaluation = evaluateBloodTest(report.results);
         document.getElementById('r-blood-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
-    } else if (report.type === 'Urine Test') {
-        urineSection.style.display = 'block';
+    } 
+    if (report.type.includes('Urine Test')) {
         const evaluation = evaluateUrineTest(report.results);
         document.getElementById('r-urine-table-body').innerHTML = evaluation.rows || '<tr><td colspan="3">No data provided</td></tr>';
-    } else if (report.type === 'Lipid Profile') {
-        if(lipidSection) lipidSection.style.display = 'block';
+    } 
+    if (report.type.includes('Lipid Profile') && lipidSection) {
         const evaluation = evaluateLipidProfile(report.results);
         document.getElementById('r-lipid-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
-    } else if (report.type === 'Liver Function Test') {
-        if(lftSection) lftSection.style.display = 'block';
+    } 
+    if (report.type.includes('Liver Function Test') && lftSection) {
         const evaluation = evaluateLFT(report.results);
         document.getElementById('r-lft-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
     }
