@@ -501,12 +501,94 @@ function evaluateUrineTest(results) {
     return { rows: formattedRows.join(''), summary };
 }
 
+function evaluateLipidProfile(results) {
+    let summary = [];
+    let formattedRows = [];
+
+    const checkValue = (val, type, name, unit, normalRangeStr) => {
+        if (val === null || val === "" || isNaN(val)) return null;
+        let status = 'Normal';
+        let cssClass = 'text-success';
+
+        if (type === 'max' && val > normalRangeStr) {
+            status = 'High'; cssClass = 'text-danger'; summary.push(`${name} is elevated (${val}), should be < ${normalRangeStr}.`);
+        } else if (type === 'min' && val < normalRangeStr) {
+            status = 'Low'; cssClass = 'text-warning'; summary.push(`${name} is low (${val}), should be > ${normalRangeStr}.`);
+        }
+
+        return `<tr>
+            <td><strong>${name}</strong></td>
+            <td class="${cssClass}">${val} ${status !== 'Normal' ? `(${status})` : ''}</td>
+            <td>${unit}</td>
+            <td>${type === 'max' ? '< ' + normalRangeStr : '> ' + normalRangeStr}</td>
+        </tr>`;
+    };
+
+    const chol = checkValue(results.cholesterol, 'max', 'Total Cholesterol', 'mg/dL', 200);
+    const trig = checkValue(results.triglycerides, 'max', 'Triglycerides', 'mg/dL', 150);
+    const hdl = checkValue(results.hdl, 'min', 'HDL Cholesterol', 'mg/dL', 40);
+    const ldl = checkValue(results.ldl, 'max', 'LDL Cholesterol', 'mg/dL', 100);
+
+    if (chol) formattedRows.push(chol);
+    if (trig) formattedRows.push(trig);
+    if (hdl) formattedRows.push(hdl);
+    if (ldl) formattedRows.push(ldl);
+
+    if (summary.length === 0 && formattedRows.length > 0) {
+        summary.push("Lipid profile is within normal limits, indicating a healthy cardiovascular risk profile.");
+    }
+
+    return { rows: formattedRows.join(''), summary };
+}
+
+function evaluateLFT(results) {
+    let summary = [];
+    let formattedRows = [];
+
+    const checkValue = (val, min, max, name, unit) => {
+        if (val === null || val === "" || isNaN(val)) return null;
+        let status = 'Normal';
+        let cssClass = 'text-success';
+
+        if (val < min) { status = 'Low'; cssClass = 'text-warning'; summary.push(`${name} is low (${val}), minimum is ${min}.`); }
+        else if (val > max) { status = 'High'; cssClass = 'text-danger'; summary.push(`${name} is elevated (${val}), maximum is ${max}.`); }
+
+        return `<tr>
+            <td><strong>${name}</strong></td>
+            <td class="${cssClass}">${val} ${status !== 'Normal' ? `(${status})` : ''}</td>
+            <td>${unit}</td>
+            <td>${min} - ${max}</td>
+        </tr>`;
+    };
+
+    const bil = checkValue(results.bilirubin, 0.1, 1.2, 'Total Bilirubin', 'mg/dL');
+    const sgpt = checkValue(results.sgpt, 7, 56, 'SGPT / ALT', 'U/L');
+    const sgot = checkValue(results.sgot, 8, 40, 'SGOT / AST', 'U/L');
+    const alp = checkValue(results.alp, 44, 147, 'Alkaline Phosphatase', 'U/L');
+
+    if (bil) formattedRows.push(bil);
+    if (sgpt) formattedRows.push(sgpt);
+    if (sgot) formattedRows.push(sgot);
+    if (alp) formattedRows.push(alp);
+
+    if (summary.length === 0 && formattedRows.length > 0) {
+        summary.push("Liver enzymes and bilirubin levels are within normal physiological ranges.");
+    }
+
+    return { rows: formattedRows.join(''), summary };
+}
+
 // Generate New Report Event
 DOM.formMedical.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    // Determine Active Tab (Blood or Urine)
-    const isBloodTestActive = document.getElementById('blood-test-fields').classList.contains('active');
+    // Determine Active Tab
+    const activeTabTarget = document.querySelector('.tab-btn.active').getAttribute('data-target');
+    let reportType = '';
+    if (activeTabTarget === 'blood-test-fields') reportType = 'Blood Test';
+    else if (activeTabTarget === 'urine-test-fields') reportType = 'Urine Test';
+    else if (activeTabTarget === 'lipid-profile-fields') reportType = 'Lipid Profile';
+    else if (activeTabTarget === 'lft-fields') reportType = 'Liver Function Test';
 
     // Gather patient info
     const patientName = document.getElementById('patient-name').value;
@@ -523,12 +605,12 @@ DOM.formMedical.addEventListener('submit', (e) => {
         patientAge,
         patientGender,
         patientAddress,
-        type: isBloodTestActive ? 'Blood Test' : 'Urine Test',
+        type: reportType,
         results: {},
         summary: []
     };
 
-    if (isBloodTestActive) {
+    if (reportType === 'Blood Test') {
         report.results = {
             hemo: parseFloat(document.getElementById('val-hemo').value),
             rbc: parseFloat(document.getElementById('val-rbc').value),
@@ -538,7 +620,7 @@ DOM.formMedical.addEventListener('submit', (e) => {
         };
         const evaluation = evaluateBloodTest(report.results);
         report.summary = evaluation.summary;
-    } else {
+    } else if (reportType === 'Urine Test') {
         report.results = {
             color: document.getElementById('val-color').value,
             ph: document.getElementById('val-ph').value,
@@ -547,6 +629,24 @@ DOM.formMedical.addEventListener('submit', (e) => {
             ketones: document.getElementById('val-ketones').value
         };
         const evaluation = evaluateUrineTest(report.results);
+        report.summary = evaluation.summary;
+    } else if (reportType === 'Lipid Profile') {
+        report.results = {
+            cholesterol: parseFloat(document.getElementById('val-cholesterol').value),
+            triglycerides: parseFloat(document.getElementById('val-triglycerides').value),
+            hdl: parseFloat(document.getElementById('val-hdl').value),
+            ldl: parseFloat(document.getElementById('val-ldl').value)
+        };
+        const evaluation = evaluateLipidProfile(report.results);
+        report.summary = evaluation.summary;
+    } else if (reportType === 'Liver Function Test') {
+        report.results = {
+            bilirubin: parseFloat(document.getElementById('val-bilirubin').value),
+            sgpt: parseFloat(document.getElementById('val-sgpt').value),
+            sgot: parseFloat(document.getElementById('val-sgot').value),
+            alp: parseFloat(document.getElementById('val-alp').value)
+        };
+        const evaluation = evaluateLFT(report.results);
         report.summary = evaluation.summary;
     }
 
@@ -582,19 +682,30 @@ function renderReportPreview(report) {
 
     const bloodSection = document.getElementById('r-blood-section');
     const urineSection = document.getElementById('r-urine-section');
+    const lipidSection = document.getElementById('r-lipid-section');
+    const lftSection = document.getElementById('r-lft-section');
+
+    bloodSection.style.display = 'none';
+    urineSection.style.display = 'none';
+    if(lipidSection) lipidSection.style.display = 'none';
+    if(lftSection) lftSection.style.display = 'none';
 
     if (report.type === 'Blood Test') {
         bloodSection.style.display = 'block';
-        urineSection.style.display = 'none';
-
         const evaluation = evaluateBloodTest(report.results);
         document.getElementById('r-blood-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
-    } else {
-        bloodSection.style.display = 'none';
+    } else if (report.type === 'Urine Test') {
         urineSection.style.display = 'block';
-
         const evaluation = evaluateUrineTest(report.results);
         document.getElementById('r-urine-table-body').innerHTML = evaluation.rows || '<tr><td colspan="3">No data provided</td></tr>';
+    } else if (report.type === 'Lipid Profile') {
+        if(lipidSection) lipidSection.style.display = 'block';
+        const evaluation = evaluateLipidProfile(report.results);
+        document.getElementById('r-lipid-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
+    } else if (report.type === 'Liver Function Test') {
+        if(lftSection) lftSection.style.display = 'block';
+        const evaluation = evaluateLFT(report.results);
+        document.getElementById('r-lft-table-body').innerHTML = evaluation.rows || '<tr><td colspan="4">No data provided</td></tr>';
     }
 
     // AI Summary

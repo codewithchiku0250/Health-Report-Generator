@@ -226,6 +226,8 @@
                     <div class="form-tabs">
                         <button type="button" class="tab-btn active" data-target="blood-test-fields">Blood Test</button>
                         <button type="button" class="tab-btn" data-target="urine-test-fields">Urine Test</button>
+                        <button type="button" class="tab-btn" data-target="lipid-profile-fields">Lipid Profile</button>
+                        <button type="button" class="tab-btn" data-target="lft-fields">Liver Function</button>
                     </div>
 
                     <!-- Blood Test Fields -->
@@ -304,6 +306,51 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Lipid Profile Fields -->
+                    <div id="lipid-profile-fields" class="tab-content hidden">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="val-cholesterol">Total Cholesterol (mg/dL) <span class="help-icon" title="Normal: < 200">?</span></label>
+                                <input type="number" id="val-cholesterol" placeholder="e.g. 180">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-triglycerides">Triglycerides (mg/dL) <span class="help-icon" title="Normal: < 150">?</span></label>
+                                <input type="number" id="val-triglycerides" placeholder="e.g. 120">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-hdl">HDL Cholesterol (mg/dL) <span class="help-icon" title="Normal: > 40">?</span></label>
+                                <input type="number" id="val-hdl" placeholder="e.g. 50">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-ldl">LDL Cholesterol (mg/dL) <span class="help-icon" title="Normal: < 100">?</span></label>
+                                <input type="number" id="val-ldl" placeholder="e.g. 90">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LFT Fields -->
+                    <div id="lft-fields" class="tab-content hidden">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="val-bilirubin">Total Bilirubin (mg/dL) <span class="help-icon" title="Normal: 0.1-1.2">?</span></label>
+                                <input type="number" step="0.1" id="val-bilirubin" placeholder="e.g. 0.8">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-sgpt">SGPT / ALT (U/L) <span class="help-icon" title="Normal: 7-56">?</span></label>
+                                <input type="number" id="val-sgpt" placeholder="e.g. 30">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-sgot">SGOT / AST (U/L) <span class="help-icon" title="Normal: 8-40">?</span></label>
+                                <input type="number" id="val-sgot" placeholder="e.g. 25">
+                            </div>
+                            <div class="form-group">
+                                <label for="val-alp">Alkaline Phosphatase (U/L) <span class="help-icon" title="Normal: 44-147">?</span></label>
+                                <input type="number" id="val-alp" placeholder="e.g. 100">
+                            </div>
+                        </div>
+                    </div>
+
 
                     <div class="form-actions">
                         <button type="button" id="btn-cancel-report" class="btn btn-secondary">Cancel</button>
@@ -389,6 +436,42 @@
                             </tr>
                         </thead>
                         <tbody id="r-urine-table-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Lipid Profile Output -->
+                <div id="r-lipid-section" class="results-section" style="display: none; margin-top: 2rem;">
+                    <h3>Lipid Profile</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Result</th>
+                                <th>Units</th>
+                                <th>Normal Range</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r-lipid-table-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- LFT Output -->
+                <div id="r-lft-section" class="results-section" style="display: none; margin-top: 2rem;">
+                    <h3>Liver Function Test</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Test Name</th>
+                                <th>Result</th>
+                                <th>Units</th>
+                                <th>Normal Range</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r-lft-table-body">
                             <!-- Injected by JS -->
                         </tbody>
                     </table>
