@@ -450,7 +450,7 @@ document.querySelectorAll('.btn-pay').forEach(btn => {
         selectedAmount = parseInt(e.target.getAttribute('data-amount')) * 100; // Razorpay needs amount in paise
         
         const options = {
-            "key": "rzp_test_dummykey_replace_me", // Enter the Key ID generated from the Dashboard
+            "key": "rzp_live_ScPYDeXQyS9rTp", // Razorpay Key ID
             "amount": selectedAmount,
             "currency": "INR",
             "name": "HealthGen Diagnostics",
@@ -469,14 +469,6 @@ document.querySelectorAll('.btn-pay').forEach(btn => {
                 "color": "#1E6091"
             }
         };
-
-        if (options.key === "rzp_test_dummykey_replace_me") {
-            showToast("Simulating Payment (No Real Key Provided)...");
-            setTimeout(() => {
-                handlePaymentSuccess('pay_simulated_' + Math.floor(Math.random() * 1000000));
-            }, 1000);
-            return;
-        }
 
         try {
             const rzp = new Razorpay(options);
