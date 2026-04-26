@@ -182,6 +182,18 @@ document.getElementById('link-to-login').addEventListener('click', (e) => {
 DOM.formLogin.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (email === 'al9434365@gmail.com' && password === 'Ankush@123') {
+        AppState.currentUser = {
+            name: 'Admin Ankush',
+            email: email,
+            role: 'admin'
+        };
+        localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+        loginSuccess();
+        return;
+    }
 
     // Simulate Login
     const users = getAllUsers();
@@ -193,7 +205,8 @@ DOM.formLogin.addEventListener('submit', (e) => {
             email: email,
             clinicName: 'HealthGen Diagnostics',
             clinicAddress: '123 Medical Boulevard, Wellness City',
-            clinicPhone: '(555) 123-4567'
+            clinicPhone: '(555) 123-4567',
+            subscription: { isActive: false, plan: null, expiry: null }
         };
         users[email] = AppState.currentUser;
         saveUsers(users);
@@ -212,7 +225,10 @@ DOM.formSignup.addEventListener('submit', (e) => {
 
     // Simulate Signup
     const users = getAllUsers();
-    AppState.currentUser = { name, email, clinicName, clinicAddress, clinicPhone };
+    AppState.currentUser = { 
+        name, email, clinicName, clinicAddress, clinicPhone,
+        subscription: { isActive: false, plan: null, expiry: null }
+    };
     users[email] = AppState.currentUser;
     saveUsers(users);
 
@@ -232,7 +248,8 @@ document.getElementById('btn-guest-login').addEventListener('click', () => {
             email: email,
             clinicName: 'HealthGen Diagnostics',
             clinicAddress: '123 Medical Boulevard, Wellness City',
-            clinicPhone: '(555) 123-4567'
+            clinicPhone: '(555) 123-4567',
+            subscription: { isActive: false, plan: null, expiry: null }
         };
         users[email] = AppState.currentUser;
         saveUsers(users);
@@ -298,11 +315,26 @@ if (DOM.formProfile) {
 }
 
 function loginSuccess() {
-    DOM.navUsername.textContent = `Dr. ${AppState.currentUser.name}`;
-    DOM.welcomeMsg.textContent = `Welcome back, Dr. ${AppState.currentUser.name}!`;
-    seedDummyData();
-    loadReports();
-    showScreen('screen-dashboard');
+    DOM.navUsername.textContent = AppState.currentUser.role === 'admin' ? AppState.currentUser.name : `Dr. ${AppState.currentUser.name}`;
+    DOM.welcomeMsg.textContent = `Welcome back, ${AppState.currentUser.role === 'admin' ? '' : 'Dr. '}${AppState.currentUser.name}!`;
+    
+    if (AppState.currentUser.role === 'admin') {
+        renderAdminDashboard();
+        showScreen('screen-admin');
+    } else {
+        // Ensure subscription object exists for older accounts
+        if (!AppState.currentUser.subscription) {
+            AppState.currentUser.subscription = { isActive: false, plan: null, expiry: null };
+            const users = getAllUsers();
+            users[AppState.currentUser.email] = AppState.currentUser;
+            saveUsers(users);
+            localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+        }
+
+        seedDummyData();
+        loadReports();
+        showScreen('screen-dashboard');
+    }
     showToast('Logged in successfully');
 }
 
@@ -389,13 +421,142 @@ function renderDashboard() {
 }
 
 document.getElementById('btn-new-report').addEventListener('click', () => {
-    DOM.formMedical.reset();
-    document.getElementById('report-date').valueAsDate = new Date(); // set today's date
-    showScreen('screen-input');
+    if (AppState.currentUser && AppState.currentUser.subscription && !AppState.currentUser.subscription.isActive) {
+        showScreen('screen-subscription');
+    } else {
+        DOM.formMedical.reset();
+        document.getElementById('report-date').valueAsDate = new Date(); // set today's date
+        showScreen('screen-input');
+    }
 });
+
 document.getElementById('btn-back-to-dash').addEventListener('click', () => {
     showScreen('screen-dashboard');
 });
+
+document.getElementById('btn-sub-back-to-dash').addEventListener('click', () => {
+    showScreen('screen-dashboard');
+});
+
+// ==========================================
+// RAZORPAY & SUBSCRIPTION LOGIC
+// ==========================================
+let selectedPlan = null;
+let selectedAmount = null;
+
+document.querySelectorAll('.btn-pay').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        selectedPlan = e.target.getAttribute('data-plan');
+        selectedAmount = parseInt(e.target.getAttribute('data-amount')) * 100; // Razorpay needs amount in paise
+        
+        const options = {
+            "key": "rzp_test_dummykey_replace_me", // Enter the Key ID generated from the Dashboard
+            "amount": selectedAmount,
+            "currency": "INR",
+            "name": "HealthGen Diagnostics",
+            "description": `${selectedPlan === 'monthly' ? 'Monthly' : 'Yearly'} Subscription`,
+            "image": "https://example.com/your_logo",
+            "handler": function (response){
+                // On Success
+                handlePaymentSuccess(response.razorpay_payment_id);
+            },
+            "prefill": {
+                "name": AppState.currentUser.name,
+                "email": AppState.currentUser.email,
+                "contact": AppState.currentUser.clinicPhone
+            },
+            "theme": {
+                "color": "#1E6091"
+            }
+        };
+
+        try {
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response){
+                showToast('Payment Failed: ' + response.error.description, true);
+            });
+            rzp.open();
+        } catch (error) {
+            console.error("Razorpay script not loaded or error initializing", error);
+            showToast("Error initializing payment gateway. Use Simulate button for testing.", true);
+        }
+    });
+});
+
+document.getElementById('btn-simulate-payment').addEventListener('click', () => {
+    if (!selectedPlan) {
+        selectedPlan = 'yearly';
+        selectedAmount = 349900;
+    }
+    handlePaymentSuccess('pay_simulated_' + Math.floor(Math.random() * 1000000));
+});
+
+function handlePaymentSuccess(paymentId) {
+    const expiryDate = new Date();
+    if (selectedPlan === 'monthly') {
+        expiryDate.setMonth(expiryDate.getMonth() + 1);
+    } else {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    }
+
+    AppState.currentUser.subscription = {
+        isActive: true,
+        plan: selectedPlan,
+        expiry: expiryDate.getTime(),
+        paymentId: paymentId
+    };
+
+    // Save to local storage
+    const users = getAllUsers();
+    users[AppState.currentUser.email] = AppState.currentUser;
+    saveUsers(users);
+    localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+
+    // Also record revenue
+    const revenue = JSON.parse(localStorage.getItem('systemRevenue')) || 0;
+    localStorage.setItem('systemRevenue', revenue + (selectedAmount / 100));
+
+    showToast('Payment Successful! Subscription activated.');
+    
+    // Proceed to new report page
+    DOM.formMedical.reset();
+    document.getElementById('report-date').valueAsDate = new Date();
+    showScreen('screen-input');
+}
+
+// ==========================================
+// ADMIN DASHBOARD LOGIC
+// ==========================================
+function renderAdminDashboard() {
+    const users = getAllUsers();
+    let totalDoctors = 0;
+    const tableBody = document.getElementById('admin-doctors-list');
+    tableBody.innerHTML = '';
+
+    for (const email in users) {
+        if (users[email].role === 'admin') continue;
+        
+        totalDoctors++;
+        const doc = users[email];
+        const subStatus = doc.subscription && doc.subscription.isActive 
+            ? `<span class="text-success"><i class="fa-solid fa-check-circle"></i> Active (${doc.subscription.plan})</span>`
+            : `<span class="text-danger"><i class="fa-solid fa-times-circle"></i> Inactive</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>Dr. ${doc.name}</strong></td>
+            <td>${doc.email}</td>
+            <td>${doc.clinicName}</td>
+            <td>${subStatus}</td>
+        `;
+        tableBody.appendChild(tr);
+    }
+
+    document.getElementById('admin-total-doctors').textContent = totalDoctors;
+    
+    const totalRevenue = JSON.parse(localStorage.getItem('systemRevenue')) || 0;
+    document.getElementById('admin-total-revenue').textContent = `₹${totalRevenue}`;
+}
 
 
 // ==========================================

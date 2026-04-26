@@ -18,6 +18,9 @@
     <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- Razorpay Checkout -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -136,6 +139,94 @@
                     <button type="submit" class="btn btn-primary btn-block">Create Account</button>
                     <p class="auth-switch">Already have an account? <a href="#" id="link-to-login">Sign in</a></p>
                 </form>
+            </div>
+        </section>
+
+        <!-- ================= SUBSCRIPTION SCREEN ================= -->
+        <section id="screen-subscription" class="screen hidden">
+            <div class="page-header">
+                <button id="btn-sub-back-to-dash" class="icon-btn text-muted"><i class="fa-solid fa-arrow-left"></i></button>
+                <h2>Choose Your Plan</h2>
+            </div>
+            <div class="subscription-container">
+                <p class="text-center" style="margin-bottom: 2rem;">A premium subscription is required to generate unlimited professional medical reports.</p>
+                <div class="pricing-cards">
+                    <div class="pricing-card">
+                        <h3>Monthly Plan</h3>
+                        <div class="price">₹399 <span>/ month</span></div>
+                        <ul class="features-list">
+                            <li><i class="fa-solid fa-check text-success"></i> Unlimited Reports</li>
+                            <li><i class="fa-solid fa-check text-success"></i> AI Clinical Summary</li>
+                            <li><i class="fa-solid fa-check text-success"></i> PDF Downloads</li>
+                            <li><i class="fa-solid fa-check text-success"></i> Priority Support</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block btn-pay" data-plan="monthly" data-amount="399">Subscribe Monthly</button>
+                    </div>
+                    <div class="pricing-card best-value">
+                        <div class="badge">Best Value</div>
+                        <h3>Yearly Plan</h3>
+                        <div class="price">₹3499 <span>/ year</span></div>
+                        <ul class="features-list">
+                            <li><i class="fa-solid fa-check text-success"></i> All Monthly Features</li>
+                            <li><i class="fa-solid fa-check text-success"></i> Save ₹1289 annually</li>
+                            <li><i class="fa-solid fa-check text-success"></i> Custom Branding</li>
+                            <li><i class="fa-solid fa-check text-success"></i> API Access</li>
+                        </ul>
+                        <button class="btn btn-primary btn-block btn-pay" data-plan="yearly" data-amount="3499">Subscribe Yearly</button>
+                    </div>
+                </div>
+                <!-- Simulated Payment Button for testing without real backend -->
+                <div class="text-center" style="margin-top: 2rem;">
+                    <button id="btn-simulate-payment" class="btn btn-secondary btn-sm"><i class="fa-solid fa-vial"></i> Simulate Successful Payment (Test Mode)</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN SCREEN ================= -->
+        <section id="screen-admin" class="screen hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Admin Panel</h1>
+                    <p>Overview of system usage and revenue.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-user-doctor"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-value" id="admin-total-doctors">0</span>
+                            <span class="stat-label">Total Doctors</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon check"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-value" id="admin-total-revenue">₹0</span>
+                            <span class="stat-label">Total Revenue</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reports-section">
+                    <h2>Registered Doctors</h2>
+                    <div class="table-responsive">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Clinic</th>
+                                    <th>Subscription</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-doctors-list">
+                                <!-- Injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
