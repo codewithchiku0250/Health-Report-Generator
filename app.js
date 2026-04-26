@@ -922,6 +922,11 @@ document.getElementById('btn-download-pdf').addEventListener('click', () => {
     });
 });
 
+// Print Report
+document.getElementById('btn-print-report').addEventListener('click', () => {
+    window.print();
+});
+
 // Share Report
 document.getElementById('btn-share-report').addEventListener('click', async () => {
     const reportId = document.getElementById('r-report-id').textContent;

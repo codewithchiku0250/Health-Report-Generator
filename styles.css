@@ -906,3 +906,28 @@ nav {
     align-items: center;
     gap: 0.5rem;
 }
+
+/* --- Print Styles --- */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #pdf-container, #pdf-container * {
+        visibility: visible;
+    }
+    
+    #pdf-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+    }
+
+    .report-controls, nav, .toast {
+        display: none !important;
+    }
+}
