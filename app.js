@@ -455,7 +455,7 @@ document.querySelectorAll('.btn-pay').forEach(btn => {
             "currency": "INR",
             "name": "HealthGen Diagnostics",
             "description": `${selectedPlan === 'monthly' ? 'Monthly' : 'Yearly'} Subscription`,
-            "image": "https://example.com/your_logo",
+            "image": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
             "handler": function (response){
                 // On Success
                 handlePaymentSuccess(response.razorpay_payment_id);
@@ -469,6 +469,14 @@ document.querySelectorAll('.btn-pay').forEach(btn => {
                 "color": "#1E6091"
             }
         };
+
+        if (options.key === "rzp_test_dummykey_replace_me") {
+            showToast("Simulating Payment (No Real Key Provided)...");
+            setTimeout(() => {
+                handlePaymentSuccess('pay_simulated_' + Math.floor(Math.random() * 1000000));
+            }, 1000);
+            return;
+        }
 
         try {
             const rzp = new Razorpay(options);
