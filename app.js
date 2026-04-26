@@ -329,6 +329,12 @@ function loginSuccess() {
             users[AppState.currentUser.email] = AppState.currentUser;
             saveUsers(users);
             localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+        } else if (AppState.currentUser.subscription.isActive && AppState.currentUser.subscription.expiry && AppState.currentUser.subscription.expiry < Date.now()) {
+            AppState.currentUser.subscription.isActive = false;
+            const users = getAllUsers();
+            users[AppState.currentUser.email] = AppState.currentUser;
+            saveUsers(users);
+            localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
         }
 
         seedDummyData();
@@ -421,13 +427,28 @@ function renderDashboard() {
 }
 
 document.getElementById('btn-new-report').addEventListener('click', () => {
-    if (AppState.currentUser && AppState.currentUser.subscription && !AppState.currentUser.subscription.isActive) {
-        showScreen('screen-subscription');
-    } else {
-        DOM.formMedical.reset();
-        document.getElementById('report-date').valueAsDate = new Date(); // set today's date
-        showScreen('screen-input');
+    if (AppState.currentUser && AppState.currentUser.subscription) {
+        const now = Date.now();
+        // Check if plan has expired
+        if (AppState.currentUser.subscription.isActive && AppState.currentUser.subscription.expiry && AppState.currentUser.subscription.expiry < now) {
+            AppState.currentUser.subscription.isActive = false;
+            // Update local storage
+            const users = getAllUsers();
+            users[AppState.currentUser.email] = AppState.currentUser;
+            saveUsers(users);
+            localStorage.setItem('currentUser', JSON.stringify(AppState.currentUser));
+            showToast("Your subscription has expired. Please renew to continue generating reports.", true);
+        }
+
+        if (!AppState.currentUser.subscription.isActive) {
+            showScreen('screen-subscription');
+            return; // Stop report creation
+        }
     }
+
+    DOM.formMedical.reset();
+    document.getElementById('report-date').valueAsDate = new Date(); // set today's date
+    showScreen('screen-input');
 });
 
 document.getElementById('btn-back-to-dash').addEventListener('click', () => {
@@ -533,11 +554,21 @@ function renderAdminDashboard() {
     const tableBody = document.getElementById('admin-doctors-list');
     tableBody.innerHTML = '';
 
+    const now = Date.now();
+
     for (const email in users) {
         if (users[email].role === 'admin') continue;
         
-        totalDoctors++;
         const doc = users[email];
+
+        // Ensure we check and deactivate expired subscriptions during rendering
+        if (doc.subscription && doc.subscription.isActive && doc.subscription.expiry && doc.subscription.expiry < now) {
+            doc.subscription.isActive = false;
+            users[email] = doc;
+            saveUsers(users); // Persist updated status
+        }
+        
+        totalDoctors++;
         const subStatus = doc.subscription && doc.subscription.isActive 
             ? `<span class="text-success"><i class="fa-solid fa-check-circle"></i> Active (${doc.subscription.plan})</span>`
             : `<span class="text-danger"><i class="fa-solid fa-times-circle"></i> Inactive</span>`;
